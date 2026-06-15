@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PBR Material Engine - Procedural Generator & 3D Preview</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- LEFT PANEL: Generators, Map previews & Parameters -->
+        <aside class="control-panel">
+            <header class="app-header">
+                <div class="logo-wrapper">
+                    <i class="fa-solid fa-cubes-split logo-icon"></i>
+                    <div>
+                        <h1>PBR Material Engine</h1>
+                        <p class="tagline">Procedural Texture Generator</p>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Map Previews (Grid) -->
+            <section class="section-container">
+                <h2 class="section-title"><i class="fa-solid fa-images"></i> Mappe Generate</h2>
+                <div class="maps-grid">
+                    <div class="map-card" data-map="albedo">
+                        <span class="map-label">Albedo</span>
+                        <div class="map-preview-wrapper">
+                            <canvas id="canvas-albedo" class="map-canvas" width="256" height="256"></canvas>
+                        </div>
+                        <div class="map-actions">
+                            <button class="btn-download-map" data-map="albedo" title="Scarica Albedo"><i class="fa-solid fa-download"></i></button>
+                            <button class="btn-upload-trigger" data-map="albedo" title="Sostituisci Albedo"><i class="fa-solid fa-upload"></i></button>
+                            <button class="btn-delete-map" data-map="albedo" title="Azzera Albedo"><i class="fa-solid fa-trash"></i></button>
+                            <input type="file" class="input-map-file" data-map="albedo" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                    
+                    <div class="map-card" data-map="normal">
+                        <span class="map-label">Normal</span>
+                        <div class="map-preview-wrapper">
+                            <canvas id="canvas-normal" class="map-canvas" width="256" height="256"></canvas>
+                        </div>
+                        <div class="map-actions">
+                            <button class="btn-download-map" data-map="normal" title="Scarica Normal"><i class="fa-solid fa-download"></i></button>
+                            <button class="btn-upload-trigger" data-map="normal" title="Sostituisci Normal"><i class="fa-solid fa-upload"></i></button>
+                            <button class="btn-delete-map" data-map="normal" title="Azzera Normal"><i class="fa-solid fa-trash"></i></button>
+                            <input type="file" class="input-map-file" data-map="normal" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+
+                    <div class="map-card" data-map="specular">
+                        <span class="map-label">Specular</span>
+                        <div class="map-preview-wrapper">
+                            <canvas id="canvas-specular" class="map-canvas" width="256" height="256"></canvas>
+                        </div>
+                        <div class="map-actions">
+                            <button class="btn-download-map" data-map="specular" title="Scarica Specular"><i class="fa-solid fa-download"></i></button>
+                            <button class="btn-upload-trigger" data-map="specular" title="Sostituisci Specular"><i class="fa-solid fa-upload"></i></button>
+                            <button class="btn-delete-map" data-map="specular" title="Azzera Specular"><i class="fa-solid fa-trash"></i></button>
+                            <input type="file" class="input-map-file" data-map="specular" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+
+                    <div class="map-card" data-map="displacement">
+                        <span class="map-label">Displace Map</span>
+                        <div class="map-preview-wrapper">
+                            <canvas id="canvas-displacement" class="map-canvas" width="256" height="256"></canvas>
+                        </div>
+                        <div class="map-actions">
+                            <button class="btn-download-map" data-map="displacement" title="Scarica Displacement"><i class="fa-solid fa-download"></i></button>
+                            <button class="btn-upload-trigger" data-map="displacement" title="Sostituisci Displacement"><i class="fa-solid fa-upload"></i></button>
+                            <button class="btn-delete-map" data-map="displacement" title="Azzera Displacement"><i class="fa-solid fa-trash"></i></button>
+                            <input type="file" class="input-map-file" data-map="displacement" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+
+                    <div class="map-card" data-map="reflection">
+                        <span class="map-label">Reflection</span>
+                        <div class="map-preview-wrapper">
+                            <canvas id="canvas-reflection" class="map-canvas" width="256" height="256"></canvas>
+                        </div>
+                        <div class="map-actions">
+                            <button class="btn-download-map" data-map="reflection" title="Scarica Reflection"><i class="fa-solid fa-download"></i></button>
+                            <button class="btn-upload-trigger" data-map="reflection" title="Sostituisci Reflection"><i class="fa-solid fa-upload"></i></button>
+                            <button class="btn-delete-map" data-map="reflection" title="Azzera Reflection"><i class="fa-solid fa-trash"></i></button>
+                            <input type="file" class="input-map-file" data-map="reflection" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Prompt & Generation Section -->
+            <section class="section-container prompt-section">
+                <h2 class="section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Prompt Generativo</h2>
+                
+                <div class="presets-row">
+                    <button class="preset-btn" data-preset="gold"><i class="fa-solid fa-coins"></i> Oro</button>
+                    <button class="preset-btn" data-preset="rusty-iron"><i class="fa-solid fa-oil-can"></i> Ferro Arrugginito</button>
+                    <button class="preset-btn active" data-preset="concrete"><i class="fa-solid fa-square"></i> Cemento</button>
+                    <button class="preset-btn" data-preset="wood"><i class="fa-solid fa-tree"></i> Legno</button>
+                    <button class="preset-btn" data-preset="brick"><i class="fa-solid fa-cubes"></i> Mattoni</button>
+                    <button class="preset-btn" data-preset="marble"><i class="fa-solid fa-gem"></i> Marmo</button>
+                </div>
+
+                <div class="prompt-input-wrapper">
+                    <input type="text" id="prompt-input" placeholder="Es. Concrete, Gold, Rusted Metal, Brick wall..." value="concrete">
+                    <button id="btn-generate" class="btn-primary">
+                        <span>Genera</span>
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+
+                <div class="download-all-wrapper">
+                    <button id="btn-download-all" class="btn-secondary">
+                        <i class="fa-solid fa-file-zipper"></i> Scarica Pacchetto Texture
+                    </button>
+                </div>
+            </section>
+
+            <!-- Tweaks & Properties Sliders -->
+            <section class="section-container sliders-section">
+                <h2 class="section-title"><i class="fa-solid fa-sliders"></i> Regolazioni Materiale</h2>
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <label for="input-roughness">Roughness Base</label>
+                        <span id="val-roughness">0.5</span>
+                    </div>
+                    <input type="range" id="input-roughness" min="0" max="1" step="0.05" value="0.5">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <label for="input-metallic">Metallic Base</label>
+                        <span id="val-metallic">0.0</span>
+                    </div>
+                    <input type="range" id="input-metallic" min="0" max="1" step="0.05" value="0.0">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <label for="input-displacement">Displacement Scale</label>
+                        <span id="val-displacement">0.05</span>
+                    </div>
+                    <input type="range" id="input-displacement" min="0" max="0.3" step="0.01" value="0.05">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <label for="input-tiling">Tiling (Ripetizione)</label>
+                        <span id="val-tiling">1</span>
+                    </div>
+                    <input type="range" id="input-tiling" min="1" max="5" step="1" value="1">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <label for="input-frequency">Dettaglio Rugosità (Freq.)</label>
+                        <span id="val-frequency">2.0</span>
+                    </div>
+                    <input type="range" id="input-frequency" min="0.5" max="8.0" step="0.1" value="2.0">
+                </div>
+
+                <div class="slider-group">
+                    <div class="slider-header">
+                        <label for="input-opacity">Opacità / Trasparenza</label>
+                        <span id="val-opacity">1.0</span>
+                    </div>
+                    <input type="range" id="input-opacity" min="0" max="1" step="0.05" value="1.0">
+                </div>
+            </section>
+
+            <!-- AI Configuration Section -->
+            <section class="section-container ai-config-section">
+                <h2 class="section-title"><i class="fa-solid fa-gears"></i> Configurazione AI</h2>
+                <div class="control-option-vertical">
+                    <label for="select-backend">Backend Generativo</label>
+                    <select id="select-backend">
+                        <option value="pollinations">Pollinations AI (Online)</option>
+                        <option value="comfyui" selected>ComfyUI (Localhost)</option>
+                    </select>
+                </div>
+                <div id="comfyui-settings" class="comfyui-settings-group">
+                    <div class="setting-item">
+                        <label for="input-comfy-url">Indirizzo ComfyUI</label>
+                        <input type="text" id="input-comfy-url" value="http://127.0.0.1:8188">
+                    </div>
+                    <div class="setting-item">
+                        <label for="input-comfy-model">Modello di Diffusione (UNet)</label>
+                        <input type="text" id="input-comfy-model" value="z_image_turbo_bf16.safetensors">
+                    </div>
+                    <div class="setting-item">
+                        <label for="input-comfy-weight-dtype">Precisione Pesi (Dtype)</label>
+                        <select id="input-comfy-weight-dtype">
+                            <option value="default" selected>default (Nativa)</option>
+                            <option value="fp8_e4m3fn">fp8_e4m3fn (Consigliato VRAM ridotta)</option>
+                            <option value="fp8_e5m2">fp8_e5m2</option>
+                            <option value="fp16">fp16</option>
+                            <option value="bf16">bf16</option>
+                            <option value="fp32">fp32</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="input-comfy-clip">Text Encoder (CLIP)</label>
+                        <input type="text" id="input-comfy-clip" value="qwen_3_4b.safetensors">
+                    </div>
+                    <div class="setting-item">
+                        <label for="input-comfy-clip-type">Tipo CLIP</label>
+                        <select id="input-comfy-clip-type">
+                            <option value="lumina2" selected>lumina2 (Z-Image)</option>
+                            <option value="ltxv">ltxv</option>
+                            <option value="flux">flux</option>
+                            <option value="sd3">sd3</option>
+                            <option value="stable_diffusion">stable_diffusion</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="input-comfy-vae">Modello VAE</label>
+                        <input type="text" id="input-comfy-vae" value="ae.safetensors">
+                    </div>
+                </div>
+            </section>
+
+            </section>
+        </aside>
+
+        <!-- RIGHT PANEL: Full screen 3D Viewport -->
+        <main class="viewport-panel">
+            <div id="threejs-container"></div>
+            
+            <!-- Floating Overlay Viewport Controls -->
+            <div class="viewport-overlay">
+                <div class="overlay-header">
+                    <h3>Anteprima 3D PBR</h3>
+                    <span class="badge">Tempo Reale</span>
+                </div>
+                <div class="overlay-controls">
+                    <!-- Object Shape Switcher -->
+                    <div class="control-option">
+                        <label><i class="fa-solid fa-shapes"></i> Forma</label>
+                        <select id="select-mesh">
+                            <option value="sphere" selected>Sfera</option>
+                            <option value="cube">Cubo</option>
+                            <option value="cylinder">Cilindro</option>
+                            <option value="torus">Toro</option>
+                        </select>
+                    </div>
+
+                    <!-- Environment Light Switcher -->
+                    <div class="control-option">
+                        <label><i class="fa-solid fa-lightbulb"></i> Luce</label>
+                        <select id="select-light">
+                            <option value="studio" selected>Studio (Luce Bianca)</option>
+                            <option value="warm">Calda (Tramonto)</option>
+                            <option value="cool">Fredda (Cyberpunk)</option>
+                            <option value="dramatic">Drammatica (Contrasto)</option>
+                        </select>
+                    </div>
+
+                    <!-- Rotation Toggle -->
+                    <button id="btn-rotate" class="toggle-btn active" title="Attiva/Disattiva Rotazione">
+                        <i class="fa-solid fa-sync fa-spin"></i> Rotazione
+                    </button>
+                </div>
+            </div>
+
+            <!-- Toast notification for actions -->
+            <div id="toast" class="toast hidden">Mappe generate con successo!</div>
+        </main>
+    </div>
+
+    <!-- JSZip for exporting all maps -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- Importmap for ESM resolution -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.153.0/build/three.module.js",
+          "postprocessing": "https://cdn.jsdelivr.net/npm/postprocessing@6.35.5/build/index.js",
+          "material-wox": "./material-wox.js",
+          "detect-gpu": "https://cdn.jsdelivr.net/npm/detect-gpu@5.0.38/+esm"
+        }
+      }
+    </script>
+
+    <!-- Core Application Logic as ESM -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+{
+	"name": "example",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite --host",
+		"start": "npm run dev",
+		"build": "vite build",
+		"preview": "vite preview"
+	},
+	"devDependencies": {
+		"@rollup/plugin-wasm": "^6.1.2",
+		"vite": "^3.0.0",
+		"vite-plugin-compression": "^0.5.1",
+		"vite-plugin-glsl": "^0.2.0",
+		"vite-plugin-top-level-await": "^1.2.4",
+		"vite-plugin-wasm": "^3.2.1"
+	},
+	"dependencies": {
+		"copy-to-clipboard": "^3.3.2",
+		"detect-gpu": "^5.0.13",
+		"drag-drop": "^7.2.0",
+		"postprocessing": "^6.31.0",
+		"material-wox": "file:../material-wox-full",
+		"stats-gl": "^1.0.4",
+		"three": "^0.156.0",
+		"tweakpane": "^3.1.0"
+	}
+}

@@ -1,0 +1,22 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Top Face of the Cube -->
+  <path d="M128 32L214.6 82L128 132L41.4 82L128 32Z" fill="url(#paint0_linear)"/>
+  <!-- Left Face of the Cube -->
+  <path d="M41.4 82L128 132V224L41.4 174V82Z" fill="url(#paint1_linear)"/>
+  <!-- Right Face of the Cube -->
+  <path d="M128 132L214.6 82V174L128 224V132Z" fill="url(#paint2_linear)"/>
+  <defs>
+    <linearGradient id="paint0_linear" x1="41.4" y1="82" x2="214.6" y2="82" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#818cf8"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </linearGradient>
+    <linearGradient id="paint1_linear" x1="41.4" y1="82" x2="128" y2="224" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#3730a3"/>
+    </linearGradient>
+    <linearGradient id="paint2_linear" x1="128" y1="132" x2="214.6" y2="224" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#34d399"/>
+      <stop offset="1" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+</svg>
