@@ -18,13 +18,7 @@ const state = {
     isGenerating: false,
     
     // AI Backend parameters
-    aiBackend: 'comfyui', // 'pollinations' or 'comfyui'
-    comfyUrl: 'http://127.0.0.1:8188',
-    comfyModel: 'z_image_turbo_bf16.safetensors',
-    comfyWeightDtype: 'default',
-    comfyClip: 'qwen_3_4b.safetensors',
-    comfyClipType: 'lumina2',
-    comfyVae: 'ae.safetensors'
+    aiBackend: 'pollinations'
 };
 
 // --- DOM ELEMENTS ---
@@ -54,15 +48,7 @@ const elements = {
     btnDownloadAll: document.getElementById('btn-download-all'),
     presetBtns: document.querySelectorAll('.preset-btn'),
     
-    // AI Config elements
-    selectBackend: document.getElementById('select-backend'),
-    comfySettingsGroup: document.getElementById('comfyui-settings'),
-    inputComfyUrl: document.getElementById('input-comfy-url'),
-    inputComfyModel: document.getElementById('input-comfy-model'),
-    selectComfyWeightDtype: document.getElementById('input-comfy-weight-dtype'),
-    inputComfyClip: document.getElementById('input-comfy-clip'),
-    selectComfyClipType: document.getElementById('input-comfy-clip-type'),
-    inputComfyVae: document.getElementById('input-comfy-vae'),
+
     
     threeContainer: document.getElementById('threejs-container'),
     selectMesh: document.getElementById('select-mesh'),
@@ -409,181 +395,6 @@ function generatePollinationsMaterial() {
         });
 }
 
-// Generate PBR texture maps via Local ComfyUI API
-function generateComfyUIMaterial() {
-    const seed = Math.floor(Math.random() * 9999999999);
-    
-    // Workflow structure exported from ComfyUI API format
-    const workflow = {
-      "83:28": {
-        "class_type": "UNETLoader",
-        "inputs": {
-          "unet_name": state.comfyModel,
-          "weight_dtype": state.comfyWeightDtype
-        }
-      },
-      "83:30": {
-        "class_type": "CLIPLoader",
-        "inputs": {
-          "clip_name": state.comfyClip,
-          "type": state.comfyClipType,
-          "device": "default"
-        }
-      },
-      "83:29": {
-        "class_type": "VAELoader",
-        "inputs": {
-          "vae_name": state.comfyVae
-        }
-      },
-      "83:13": {
-        "class_type": "EmptySD3LatentImage",
-        "inputs": {
-          "width": 512,
-          "height": 512,
-          "batch_size": 1
-        }
-      },
-      "83:27": {
-        "class_type": "CLIPTextEncode",
-        "inputs": {
-          "text": state.prompt + ", seamless texture, tileable pattern, PBR material",
-          "clip": ["83:30", 0]
-        }
-      },
-      "83:33": {
-        "class_type": "ConditioningZeroOut",
-        "inputs": {
-          "conditioning": ["83:27", 0]
-        }
-      },
-      "83:3": {
-        "class_type": "KSampler",
-        "inputs": {
-          "seed": seed,
-          "steps": 4,
-          "cfg": 1,
-          "sampler_name": "res_multistep",
-          "scheduler": "simple",
-          "denoise": 1,
-          "model": ["83:28", 0],
-          "positive": ["83:27", 0],
-          "negative": ["83:33", 0],
-          "latent_image": ["83:13", 0]
-        }
-      },
-      "83:8": {
-        "class_type": "VAEDecode",
-        "inputs": {
-          "samples": ["83:3", 0],
-          "vae": ["83:29", 0]
-        }
-      },
-      "83:99": {
-        "class_type": "ImageScale",
-        "inputs": {
-          "image": ["83:8", 0],
-          "width": 1024,
-          "height": 1024,
-          "upscale_method": "bicubic",
-          "crop": "disabled"
-        }
-      },
-      "60": {
-        "class_type": "SaveImage",
-        "inputs": {
-          "filename_prefix": "z-image-turbo",
-          "images": ["83:99", 0]
-        }
-      }
-    };
-
-    const host = state.comfyUrl.replace(/\/$/, ""); // trim trailing slash
-
-    fetch(`${host}/prompt`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: workflow })
-    })
-    .then(async response => {
-        if (!response.ok) {
-            const errDetails = await response.text();
-            throw new Error(`Errore durante l'invio della coda ComfyUI: ${errDetails}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        const promptId = data.prompt_id;
-        showToast("Prompt inviato. Elaborazione in corso su ComfyUI...");
-        pollComfyUIHistory(host, promptId);
-    })
-    .catch(err => {
-        console.error(err);
-        state.isGenerating = false;
-        elements.btnGenerate.disabled = false;
-        elements.btnGenerate.querySelector('i').classList.remove('fa-spin');
-        elements.btnGenerate.querySelector('span').textContent = 'Genera';
-        alert("Errore CORS o di connessione a ComfyUI!\n\nPer consentire alla Webapp di comunicare con ComfyUI, avvialo da riga di comando abilitando i permessi CORS:\npython main.py --allow-cors-origin=*");
-        showToast("CORS bloccato. Avvia ComfyUI con --allow-cors-origin=*");
-    });
-}
-
-function pollComfyUIHistory(host, promptId) {
-    const checkInterval = setInterval(() => {
-        fetch(`${host}/history/${promptId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data && data[promptId]) {
-                    clearInterval(checkInterval);
-                    const promptData = data[promptId];
-                    const outputs = promptData.outputs;
-                    
-                    if (outputs && outputs["60"] && outputs["60"].images && outputs["60"].images.length > 0) {
-                        const filename = outputs["60"].images[0].filename;
-                        const subfolder = outputs["60"].images[0].subfolder || "";
-                        const type = outputs["60"].images[0].type || "output";
-                        
-                        let imageUrl = `${host}/view?filename=${encodeURIComponent(filename)}&type=${type}`;
-                        if (subfolder) {
-                            imageUrl += `&subfolder=${encodeURIComponent(subfolder)}`;
-                        }
-                        
-                        // Load image onto canvases
-                        const img = new Image();
-                        img.crossOrigin = "anonymous";
-                        img.onload = function() {
-                            processAlbedoToPBR(img);
-                            state.isGenerating = false;
-                            elements.btnGenerate.disabled = false;
-                            elements.btnGenerate.querySelector('i').classList.remove('fa-spin');
-                            elements.btnGenerate.querySelector('span').textContent = 'Genera';
-                            showToast("Texture ComfyUI caricata con successo!");
-                        };
-                        img.onerror = function() {
-                            state.isGenerating = false;
-                            elements.btnGenerate.disabled = false;
-                            elements.btnGenerate.querySelector('i').classList.remove('fa-spin');
-                            elements.btnGenerate.querySelector('span').textContent = 'Genera';
-                            showToast("Errore durante il caricamento dell'immagine generata.");
-                        };
-                        img.src = imageUrl;
-                    } else {
-                        throw new Error("Nessuna immagine trovata nell'output di ComfyUI");
-                    }
-                }
-            })
-            .catch(err => {
-                console.error("Errore durante il polling di ComfyUI:", err);
-                clearInterval(checkInterval);
-                state.isGenerating = false;
-                elements.btnGenerate.disabled = false;
-                elements.btnGenerate.querySelector('i').classList.remove('fa-spin');
-                elements.btnGenerate.querySelector('span').textContent = 'Genera';
-                showToast("Errore di elaborazione su ComfyUI.");
-            });
-    }, 1000);
-}
-
 // Controller routing depending on active AI backend
 function generateAIMaterial() {
     if (state.isGenerating) return;
@@ -594,12 +405,7 @@ function generateAIMaterial() {
     elements.btnGenerate.querySelector('span').textContent = 'Generando...';
     showToast("Elaborazione AI...");
 
-    if (state.aiBackend === 'comfyui') {
-        state.isGenerating = false; // reset inside function logic
-        generateComfyUIMaterial();
-    } else {
-        generatePollinationsMaterial();
-    }
+    generatePollinationsMaterial();
 }
 
 // --- THREE.JS VIEWPORT CONTROLS & RENDERER ---
@@ -709,8 +515,9 @@ function initThreeJS() {
     composer.addPass(velocityDepthNormalPass);
 
     // Material Wox: SSGI, SSAO & SSR unified effect
-    const ssgiEffect = new SSGIEffect(scene, camera, velocityDepthNormalPass, {
+    const ssgiEffect = new SSGIEffect(composer, scene, camera, {
         ...SSGIEffect.DefaultOptions,
+        velocityDepthNormalPass,
         resolutionScale: 0.75, // Balanced quality and performance
         blend: 0.95
     });
@@ -1029,41 +836,7 @@ function downloadSingleMap(mapType) {
 
 // --- EVENT BINDINGS & INIT ---
 function bindEvents() {
-    // Backend switch
-    elements.selectBackend.addEventListener('change', (e) => {
-        state.aiBackend = e.target.value;
-        if (state.aiBackend === 'comfyui') {
-            elements.comfySettingsGroup.classList.remove('hidden');
-            showToast("Backend impostato su ComfyUI locale.");
-        } else {
-            elements.comfySettingsGroup.classList.add('hidden');
-            showToast("Backend impostato su Pollinations AI.");
-        }
-    });
 
-    elements.inputComfyUrl.addEventListener('input', (e) => {
-        state.comfyUrl = e.target.value;
-    });
-
-    elements.inputComfyModel.addEventListener('input', (e) => {
-        state.comfyModel = e.target.value;
-    });
-
-    elements.selectComfyWeightDtype.addEventListener('change', (e) => {
-        state.comfyWeightDtype = e.target.value;
-    });
-
-    elements.inputComfyClip.addEventListener('input', (e) => {
-        state.comfyClip = e.target.value;
-    });
-
-    elements.selectComfyClipType.addEventListener('change', (e) => {
-        state.comfyClipType = e.target.value;
-    });
-
-    elements.inputComfyVae.addEventListener('input', (e) => {
-        state.comfyVae = e.target.value;
-    });
 
     // Sliders
     elements.inputRoughness.addEventListener('input', (e) => {
