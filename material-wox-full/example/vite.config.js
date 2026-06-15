@@ -93,6 +93,7 @@ const downloadTexturePlugin = () => ({
 })
 
 export default {
+	base: "./",
 	plugins: [
 		glsl.default(),
 		viteCompression({ algorithm: "brotliCompress" }),

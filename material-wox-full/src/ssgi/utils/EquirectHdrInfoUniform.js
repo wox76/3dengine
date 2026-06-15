@@ -3,7 +3,7 @@
 import { Source } from "three"
 import { DataTexture, FloatType, LinearFilter, RedFormat, RepeatWrapping, RGBAFormat, Vector2 } from "three"
 
-const workerOnMessage = ({ data: { width, height, isFloatType, flipY, data } }) => {
+const workerOnMessage = ({ data: { width, height, isFloatType, isHalfFloatType, flipY, data } }) => {
 	// from: https://github.com/mrdoob/three.js/blob/dev/src/extras/DataUtils.js
 
 	// importing modules doesn't seem to work for workers that were generated through createObjectURL() for some reason
@@ -248,9 +248,14 @@ const workerOnMessage = ({ data: { width, height, isFloatType, flipY, data } }) 
 	if (!isFloatType) {
 		const newData = new Float32Array(data.length)
 
-		// eslint-disable-next-line guard-for-in
-		for (const i in data) {
-			newData[i] = fromHalfFloat(data[i])
+		if (isHalfFloatType) {
+			for (const i in data) {
+				newData[i] = fromHalfFloat(data[i])
+			}
+		} else {
+			for (const i in data) {
+				newData[i] = data[i] / 255.0
+			}
 		}
 
 		data = newData
@@ -325,17 +330,35 @@ export class EquirectHdrInfoUniform {
 
 	updateFrom(map) {
 		map = map.clone()
-		const { width, height, data } = map.image
+		const { width, height } = map.image
+		let data = map.image.data
 		const { type } = map
 
+		if (!data) {
+			// Extract image data from canvas or image element
+			const canvas = document.createElement("canvas")
+			canvas.width = width
+			canvas.height = height
+			const ctx = canvas.getContext("2d")
+			ctx.drawImage(map.image, 0, 0)
+			try {
+				data = ctx.getImageData(0, 0, width, height).data
+			} catch (e) {
+				data = new Uint8Array(width * height * 4)
+			}
+		}
+
 		this.size.set(width, height)
+
+		const isFloatType = type === 1015
+		const isHalfFloatType = type === 1016
 
 		return new Promise(resolve => {
 			this.worker?.terminate()
 
 			this.worker = new Worker(workerUrl)
 
-			this.worker.postMessage({ width, height, isFloatType: type === FloatType, flipY: map.flipY, data })
+			this.worker.postMessage({ width, height, isFloatType, isHalfFloatType, flipY: map.flipY, data })
 			this.worker.onmessage = ({ data: { data, totalSumValue, marginalDataArray, conditionalDataArray } }) => {
 				this.dispose()
 

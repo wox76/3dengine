@@ -358,8 +358,7 @@ function generatePollinationsMaterial() {
     }
 
     const randomSeed = Math.floor(Math.random() * 999999);
-    const rawUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptQuery)}?width=512&height=512&nologo=true&seed=${randomSeed}`;
-    const url = `https://corsproxy.io/?${rawUrl}`;
+    const url = rawUrl;
 
     fetch(url)
         .then(response => {

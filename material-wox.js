@@ -957,6 +957,7 @@ const workerOnMessage = ({
     width,
     height,
     isFloatType,
+    isHalfFloatType,
     flipY,
     data
   }
@@ -1182,10 +1183,16 @@ const workerOnMessage = ({
   };
 
   if (!isFloatType) {
-    const newData = new Float32Array(data.length); // eslint-disable-next-line guard-for-in
+    const newData = new Float32Array(data.length);
 
-    for (const i in data) {
-      newData[i] = fromHalfFloat(data[i]);
+    if (isHalfFloatType) {
+      for (const i in data) {
+        newData[i] = fromHalfFloat(data[i]);
+      }
+    } else {
+      for (const i in data) {
+        newData[i] = data[i] / 255.0;
+      }
     }
 
     data = newData;
@@ -1266,13 +1273,31 @@ class EquirectHdrInfoUniform {
     map = map.clone();
     const {
       width,
-      height,
-      data
+      height
     } = map.image;
+    let data = map.image.data;
     const {
       type
     } = map;
+
+    if (!data) {
+      // Extract image data from canvas or image element
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(map.image, 0, 0);
+
+      try {
+        data = ctx.getImageData(0, 0, width, height).data;
+      } catch (e) {
+        data = new Uint8Array(width * height * 4);
+      }
+    }
+
     this.size.set(width, height);
+    const isFloatType = type === 1015;
+    const isHalfFloatType = type === 1016;
     return new Promise(resolve => {
       var _this$worker;
 
@@ -1281,7 +1306,8 @@ class EquirectHdrInfoUniform {
       this.worker.postMessage({
         width,
         height,
-        isFloatType: type === FloatType,
+        isFloatType,
+        isHalfFloatType,
         flipY: map.flipY,
         data
       });
